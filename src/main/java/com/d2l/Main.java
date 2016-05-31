@@ -12,46 +12,67 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
+import java.util.Calendar;
 
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.fluent.Request;
 
 import com.d2lvalence.idkeyauth.ID2LUserContext;
 
 public class Main {
+
+    private static String[] dates = {
+            "2016-05-31T09:00:00.0000000Z",
+            "2016-05-31T09:00:23.4560000Z",
+            "2016-05-31T09:01:00.0000000Z",
+            "2016-05-31T09:02:45.6780000Z"
+    };
+
     public static void main(String[] args)
-            throws URISyntaxException, ClientProtocolException, IOException {
+            throws URISyntaxException, IOException, InterruptedException {
+
+        int currentMinute = Calendar.getInstance().get(Calendar.MINUTE);
+
+        String startDate = getStartDate(currentMinute);
+        String endDate = getEndDate(currentMinute);
+        System.out.println("StartDate: " + startDate + " | EndDate: " + endDate);
+
 
         String hostUrl = getProperty("hostUrl");
-        String dataSetId = getProperty("dataSetId");
         String appId = getProperty("appId");
         String appKey = getProperty("appKey");
         String userId = getProperty("userId");
         String userKey = getProperty("userKey");
-        
-        validateInput(hostUrl, appId, appKey, userId, userKey);
-        
-        
-        
-        ID2LUserContext id2lUserContext = createSecurityContext(appId, appKey,
-                hostUrl).createUserContext(userId, userKey);
+        String dataSetId = getProperty("dataSetId", "c1bf7603-669f-4bef-8cf4-651b914c4678");
 
-        // JsonReader jsonReader = Json.
-//        String bodyString = format(
-//                "{\"DataSetId\": \"%s\", \"Filters\": [{\"Name\": \"startDate\", \"Value\": \"2016-05-29\"}, {\"Name\": \"endDate\", \"Value\": \"2016-05-30\"}]}",
-//                "ba58a5a3-6d57-4720-9d25-02361f5049ae");
-//        Post(id2lUserContext.createAuthenticatedUri(
-//                "/d2l/api/lp/unstable/dataExport/create", "POST"))
-//                        .bodyString(bodyString, APPLICATION_JSON).execute()
-//                        .returnContent().asString();
-//        System.out.println(Request
-//                .Get(id2lUserContext.createAuthenticatedUri(
-//                        "/d2l/api/lp/unstable/dataExport/list", "GET"))
-//                .execute().returnContent().asString());
-//        System.out.println(Request.Get(id2lUserContext.createAuthenticatedUri(
-//                "/d2l/api/lp/unstable/dataExport/status/aaa6ae5c-fca3-4513-916c-caf1f2cff996",
-//                "GET")).execute().returnContent().asString());
+        validateInput(hostUrl, appId, appKey, userId, userKey);
+
+        ID2LUserContext id2lUserContext = createSecurityContext(appId, appKey, hostUrl).createUserContext(userId, userKey);
+
+        String bodyString = format(
+                "{\"DataSetId\": \"%s\"," +
+                        "\"Filters\": [" +
+                        "{\"Name\": \"startDate\", \"Value\": \"%s\"}, " +
+                        "{\"Name\": \"endDate\", \"Value\": \"%s\"}]}",
+                dataSetId, startDate, endDate);
+        System.out.println("BodyString: " + bodyString);
+
+        String jobId = Post(id2lUserContext.createAuthenticatedUri("/d2l/api/lp/unstable/dataExport/create", "POST"))
+                .bodyString(bodyString, APPLICATION_JSON).execute()
+                .returnContent()
+                .asString()
+                .replace("\"", "")
+                .split(" ")[1];
+        System.out.println("JobID: " + jobId);
+
+        String status = Request
+                .Get(id2lUserContext.createAuthenticatedUri(format("/d2l/api/lp/unstable/dataExport/status/%s",  jobId), "GET"))
+                .execute()
+                .returnContent()
+                .asString();
+        System.out.println("Status: " + status);
     }
+
+
 
     private static void validateInput(String... input) {
         if (asList(input).stream().anyMatch(s -> isEmpty(s))) {
@@ -73,12 +94,12 @@ public class Main {
         printStream.println("\t-DappId=<appId> -DappKey=<appKey>");
         printStream.println("\t-DuserId=<userId> -userKey=<userKey>");
     }
-    
-    private static String getStartDate() {
-        return null;
+
+    private static String getStartDate(int minute) {
+        return dates[minute % (dates.length - 1)];
     }
-    
-    private static String getEndDate() {
-        return null;
+
+    private static String getEndDate(int minute) {
+        return dates[(minute % (dates.length - 1)) + 1];
     }
 }
