@@ -9,6 +9,8 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.http.client.fluent.Request.Post;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
@@ -30,21 +32,22 @@ public class Main {
     public static void main(String[] args)
             throws URISyntaxException, IOException, InterruptedException {
 
-        int currentMinute = Calendar.getInstance().get(Calendar.MINUTE);
-
-        String startDate = getStartDate(currentMinute);
-        String endDate = getEndDate(currentMinute);
-        System.out.println("StartDate: " + startDate + " | EndDate: " + endDate);
-
-
         String hostUrl = getProperty("hostUrl");
         String appId = getProperty("appId");
         String appKey = getProperty("appKey");
         String userId = getProperty("userId");
         String userKey = getProperty("userKey");
+        String outputFolder = getProperty("outputFolder");
         String dataSetId = getProperty("dataSetId", "c1bf7603-669f-4bef-8cf4-651b914c4678");
 
         validateInput(hostUrl, appId, appKey, userId, userKey);
+
+        Calendar now = Calendar.getInstance();
+        int currentMinute = now.get(Calendar.MINUTE);
+
+        String startDate = getStartDate(currentMinute);
+        String endDate = getEndDate(currentMinute);
+        System.out.println("StartDate: " + startDate + " | EndDate: " + endDate);
 
         ID2LUserContext id2lUserContext = createSecurityContext(appId, appKey, hostUrl).createUserContext(userId, userKey);
 
@@ -64,15 +67,30 @@ public class Main {
                 .split(" ")[1];
         System.out.println("JobID: " + jobId);
 
-        String status = Request
-                .Get(id2lUserContext.createAuthenticatedUri(format("/d2l/api/lp/unstable/dataExport/status/%s",  jobId), "GET"))
+        String status = "0";
+        while(!status.equals("2")) {
+            Thread.sleep(1000);
+            status = Request
+                    .Get(id2lUserContext.createAuthenticatedUri(format("/d2l/api/lp/unstable/dataExport/status/%s", jobId), "GET"))
+                    .execute()
+                    .returnContent()
+                    .asString()
+                    .replace("\"", "")
+                    .split(" ")[1];
+        }
+
+        byte[] download = Request
+                .Get(id2lUserContext.createAuthenticatedUri(format("/d2l/api/lp/unstable/dataExport/download/%s",  jobId), "GET"))
                 .execute()
                 .returnContent()
-                .asString();
-        System.out.println("Status: " + status);
+                .asBytes();
+
+        String ouputPath = outputFolder + File.separator + now.getTimeInMillis()+".zip";
+        FileOutputStream fos = new FileOutputStream(ouputPath);
+        fos.write(download);
+        fos.close();
+        System.out.println("Downloaded to: " + ouputPath);
     }
-
-
 
     private static void validateInput(String... input) {
         if (asList(input).stream().anyMatch(s -> isEmpty(s))) {
@@ -93,6 +111,7 @@ public class Main {
         printStream.println("\t-DdataSetId=<reportId> -DstartDate=<startDate> -DendDate=<endDate>");
         printStream.println("\t-DappId=<appId> -DappKey=<appKey>");
         printStream.println("\t-DuserId=<userId> -userKey=<userKey>");
+        printStream.println("\t-DoutputFolder=<outputFolder>");
     }
 
     private static String getStartDate(int minute) {
