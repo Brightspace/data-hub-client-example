@@ -16,8 +16,14 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.d2lvalence</groupId>
       <artifactId>valence-sdk-java</artifactId>
       <version>1.0.1-SNAPSHOT</version>
     </dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>fluent-hc</artifactId>
+			<version>4.5.2</version>
+		</dependency>
   </dependencies>
 </project>
