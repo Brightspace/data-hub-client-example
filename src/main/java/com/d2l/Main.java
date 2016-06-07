@@ -167,30 +167,18 @@ public class Main {
                 "{\"DataSetId\": \"%s\", \"Filters\": [{\"Name\": \"startDate\", \"Value\": \"%s\"}, {\"Name\": \"endDate\", \"Value\": \"%s\"}]}",
                 dataSetId, startDate, endDate);
 
-        String exportJobId = createReader(
-                fixJson(makePostRequest(iD2lUserContext,
-                        "/d2l/api/lp/unstable/dataExport/create", bodyString,
-                        e -> format(
-                                "cannot create job [requestBody = %s, statusCode = %d]",
-                                bodyString, e)).getEntity().getContent()))
-                                        .readObject().getString("ExportJobId");
+        String exportJobId = createReader(makePostRequest(iD2lUserContext,
+                "/d2l/api/lp/unstable/dataExport/create", bodyString,
+                e -> format(
+                        "cannot create job [requestBody = %s, statusCode = %d]",
+                        bodyString, e)).getEntity().getContent()).readObject()
+                                .getString("ExportJobId");
 
         System.err.println(
                 format("Created the export job [dataSetId = %s, startDate = %s, endDate = %s, exportJobId = %s].",
                         dataSetId, startDate, endDate, exportJobId));
 
         return exportJobId;
-    }
-
-    private static InputStream fixJson(InputStream content) throws IOException {
-        StringWriter stringWriter = new StringWriter();
-        copy(content, stringWriter);
-
-        String[] keyValuePair = stringWriter.toString().split("\\s*:\\s*");
-
-        return new ByteArrayInputStream(
-                format("{%s\":\"%s}", keyValuePair[0], keyValuePair[1])
-                        .getBytes());
     }
 
     private static void pollForCompletedExportJob(
@@ -219,14 +207,13 @@ public class Main {
                 format("Checking the export-job status [exportJobId = %s]...",
                         exportJobId));
 
-        int status = parseInt(
-                createReader(fixJson(makeGetRequest(iD2lUserContext,
-                        format("/d2l/api/lp/unstable/dataExport/status/%s",
-                                exportJobId),
-                        e -> format(
-                                "cannot check the export-job status [exportJobId = %s, statusCode = %d]",
-                                exportJobId, e)).getEntity().getContent()))
-                                        .readObject().getString("Status"));
+        int status = createReader(makeGetRequest(iD2lUserContext,
+                format("/d2l/api/lp/unstable/dataExport/jobs/%s",
+                        exportJobId),
+                e -> format(
+                        "cannot check the export-job status [exportJobId = %s, statusCode = %d]",
+                        exportJobId, e)).getEntity().getContent()).readObject()
+                                .getInt("Status");
 
         assertValidStatus(exportJobId, status);
 
