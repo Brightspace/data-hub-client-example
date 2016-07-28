@@ -101,7 +101,7 @@ public class Main {
                         dataSetId));
 
         makeGetRequest(iD2lUserContext,
-                format("/d2l/api/lp/unstable/dataExport/list/%s", dataSetId),
+                format("/d2l/api/lp/1.13/dataExport/list/%s", dataSetId),
                 e -> format(
                         "cannot find the specified data set [dataSetId = %s, statusCode = %d]",
                         dataSetId, e));
@@ -168,7 +168,7 @@ public class Main {
                 dataSetId, startDate, endDate);
 
         String exportJobId = createReader(makePostRequest(iD2lUserContext,
-                "/d2l/api/lp/unstable/dataExport/create", bodyString,
+                "/d2l/api/lp/1.13/dataExport/create", bodyString,
                 e -> format(
                         "cannot create job [requestBody = %s, statusCode = %d]",
                         bodyString, e)).getEntity().getContent()).readObject()
@@ -208,7 +208,7 @@ public class Main {
                         exportJobId));
 
         int status = createReader(makeGetRequest(iD2lUserContext,
-                format("/d2l/api/lp/unstable/dataExport/jobs/%s",
+                format("/d2l/api/lp/1.13/dataExport/jobs/%s",
                         exportJobId),
                 e -> format(
                         "cannot check the export-job status [exportJobId = %s, statusCode = %d]",
@@ -249,7 +249,7 @@ public class Main {
                 tempFile)) {
 
             makeGetRequest(iD2lUserContext,
-                    format("/d2l/api/lp/unstable/dataExport/download/%s",
+                    format("/d2l/api/lp/1.13/dataExport/download/%s",
                             exportJobId),
                     e -> format(
                             "cannot download the export job [exportJobId = %s, statusCode = %d]",
