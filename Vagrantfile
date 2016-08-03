@@ -71,8 +71,5 @@ Vagrant.configure(2) do |config|
     sudo apt-get install -y openjdk-8-jdk
     sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
     sudo mkdir /output
-    sudo echo "* * * * * java -DhostUrl=http://kd82-mtanjandra.desire2learn.d2l:44453 -DdataSetId=c1bf7603-669f-4bef-8cf4-651b914c4678 -DappId=wLJZPZBIIEh1i5i057AdeQ -DappKey=ms6JhANKGvPhbiv_w4cZHw -DuserId=uez5sDZys8RXNCd3tlQyTO -DuserKey=dceBfZ2POyunnPlQeZtkNy -DoutputFolder=/output -jar /vagrant_data/target/datahub-client-poc-jar-with-dependencies.jar" > cronfile
-    sudo crontab cronfile
-    sudo rm cronfile
   SHELL
 end
