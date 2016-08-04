@@ -64,11 +64,15 @@ public class Main {
     public static void main(String[] args)
             throws URISyntaxException, IOException, InterruptedException {
 
+        /* Data Hub related properties */
         String hostUrl = getProperty("hostUrl");
-        String dataSetId = getProperty("dataSetId",
+        String dataSetId = getProperty(
+                "dataSetId",
                 "c1bf7603-669f-4bef-8cf4-651b914c4678");
         String outputFolder = getProperty("outputFolder");
 
+        /* OAuth 2.0 related properties */
+        // Development purposes only; the default value should always suffice
         String tokenEndpoint = getProperty(
                 "tokenEndpoint",
                 "https://auth.brightspace.com/core/connect/token"
@@ -77,12 +81,13 @@ public class Main {
         String clientId = getProperty("clientId");
         String clientSecret = getProperty("clientSecret");
 
-        // Process requires read and write access to this file
         String refreshTokenFile = getProperty("refreshTokenFile");
 
+        /* Pre-condition checks */
         assertAllArgumentsSpecified(hostUrl, dataSetId, clientId,
                 clientSecret, outputFolder, refreshTokenFile);
 
+        /* Retrieve a valid refresh token and use it to obtain a new access token */
         Path refreshTokenPath = Paths.get(refreshTokenFile);
         String oldRefreshToken = Files.readAllLines(refreshTokenPath).get(0);
 
@@ -112,10 +117,13 @@ public class Main {
         .readObject();
 
         String accessToken = responseJson.getString("access_token");
-        String newRefreshToken = responseJson.getString("refresh_token");
 
+        // Refresh token are one-time use
+        // The token endpoint provides a new refresh token that we should store for future requests
+        String newRefreshToken = responseJson.getString("refresh_token");
         Files.write(refreshTokenPath, newRefreshToken.getBytes());
 
+        /* Kick off a Data Hub export */
         assertDataSetIdExists(accessToken, hostUrl, dataSetId);
 
         int currentMinute = Calendar.getInstance().get(Calendar.MINUTE);
@@ -129,6 +137,7 @@ public class Main {
         downloadCompletedExportJob(accessToken, hostUrl, exportJobId, outputFolder);
     }
 
+    /* General helper methods */
     private static void assertAllArgumentsSpecified(String... input) {
         if (asList(input).stream().anyMatch(s -> isEmpty(s))) {
             die("a required argument is missing");
@@ -150,6 +159,46 @@ public class Main {
         printStream.println("\t-DoutputFolder=<outputFolder>");
     }
 
+    /* HTTP helper methods */
+    private static void assertOkResponse(HttpResponse response,
+                                         ErrorMessageFactory errorMessageFactory) {
+        int statusCode = response.getStatusLine().getStatusCode();
+
+        if (statusCode != SC_OK) {
+            die(errorMessageFactory.getErrorMessage(statusCode));
+        }
+    }
+
+    private static HttpResponse makeGetRequest(String accessToken,
+                                               String uri, ErrorMessageFactory errorMessageFactory)
+            throws IOException {
+
+        HttpResponse response = Get(uri)
+                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .execute()
+                .returnResponse();
+
+        assertOkResponse(response, errorMessageFactory);
+
+        return response;
+    }
+
+    private static HttpResponse makePostRequest(String accessToken,
+                                                String uri, String bodyString,
+                                                ErrorMessageFactory errorMessageFactory)
+            throws IOException {
+
+        HttpResponse response = Post(uri)
+                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .bodyString(bodyString, APPLICATION_JSON).execute()
+                .returnResponse();
+
+        assertOkResponse(response, errorMessageFactory);
+
+        return response;
+    }
+
+    /* OAuth 2.0 helper methods */
     private static String getClientAuthHeaderValue(
             String clientId,
             String clientSecret
@@ -160,6 +209,7 @@ public class Main {
         return "Basic " + new String(encodedAuth);
     }
 
+    /* Data Hub helper methods */
     private static void assertDataSetIdExists(String accessToken, String hostUrl,
             String dataSetId) throws IOException {
         System.err.println(
@@ -175,44 +225,6 @@ public class Main {
         System.err.println(
                 format("Verified that the data set is available for export-job creation [dataSetId = %s].",
                         dataSetId));
-    }
-
-    private static HttpResponse makeGetRequest(String accessToken,
-            String uri, ErrorMessageFactory errorMessageFactory)
-                    throws IOException {
-
-        HttpResponse response = Get(uri)
-                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .execute()
-                .returnResponse();
-
-        assertOkResponse(response, errorMessageFactory);
-
-        return response;
-    }
-
-    private static HttpResponse makePostRequest(String accessToken,
-            String uri, String bodyString,
-            ErrorMessageFactory errorMessageFactory)
-                    throws IOException {
-
-        HttpResponse response = Post(uri)
-                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .bodyString(bodyString, APPLICATION_JSON).execute()
-                .returnResponse();
-
-        assertOkResponse(response, errorMessageFactory);
-
-        return response;
-    }
-
-    private static void assertOkResponse(HttpResponse response,
-            ErrorMessageFactory errorMessageFactory) {
-        int statusCode = response.getStatusLine().getStatusCode();
-
-        if (statusCode != SC_OK) {
-            die(errorMessageFactory.getErrorMessage(statusCode));
-        }
     }
 
     private static String getStartDate(int minute) {
@@ -250,7 +262,7 @@ public class Main {
 
     private static void pollForCompletedExportJob(
             String accessToken, String hostUrl, String exportJobId)
-                    throws ClientProtocolException, IOException {
+                    throws IOException {
         int status = doPollForCompletedExportJob(accessToken, hostUrl, exportJobId);
 
         while (isStatusValidButIncomplete(status)) {
@@ -304,7 +316,7 @@ public class Main {
 
     private static void downloadCompletedExportJob(
             String accessToken, String hostUrl, String exportJobId,
-            String outputFolder) throws ClientProtocolException, IOException {
+            String outputFolder) throws IOException {
         System.err.println(
                 format("Downloading the export job [exportJobId = %s, outputFolder = %s]...",
                         exportJobId, outputFolder));
