@@ -39,6 +39,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.List;
 
@@ -60,9 +61,8 @@ public class Main {
         String getErrorMessage(int errorCode);
     }
 
-    private static String[] dates = { "2016-05-29T08:00:23.4560000Z",
-            "2016-05-29T09:00:23.4560000Z", "2016-05-30T09:01:00.0000000Z",
-            "2016-05-31T09:00:00.0000000Z", "2016-05-31T09:02:45.6780000Z" };
+    private static final DateTimeFormatter dtFormatter = DateTimeFormatter.ISO_INSTANT;
+    private static final Calendar now = Calendar.getInstance();
 
     private static final JsonParser jsonParser = new JsonParser();
 
@@ -130,9 +130,8 @@ public class Main {
         /* Kick off a Data Hub export */
         assertDataSetIdExists(accessToken, hostUrl, dataSetId);
 
-        int currentMinute = Calendar.getInstance().get(Calendar.MINUTE);
-        String startDate = getStartDate(currentMinute);
-        String endDate = getEndDate(currentMinute);
+        String startDate = getStartDate();
+        String endDate = getEndDate();
         String exportJobId = submitExportJob(accessToken, hostUrl, dataSetId,
                 startDate, endDate);
 
@@ -243,12 +242,32 @@ public class Main {
                         dataSetId));
     }
 
-    private static String getStartDate(int minute) {
-        return dates[minute % (dates.length - 1)];
+    private static String getStartDate() {
+        Calendar yesterdayAtMidnightUtc = Calendar.getInstance();
+        yesterdayAtMidnightUtc.set(
+                now.get(Calendar.YEAR),
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH) - 1,
+                0,  // hour of day
+                0,  // minute
+                0   // second
+        );
+
+        return dtFormatter.format(yesterdayAtMidnightUtc.toInstant());
     }
 
-    private static String getEndDate(int minute) {
-        return dates[(minute % (dates.length - 1)) + 1];
+    private static String getEndDate() {
+        Calendar todayAtMidnightUtc = Calendar.getInstance();
+        todayAtMidnightUtc.set(
+                now.get(Calendar.YEAR),
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH),
+                0,  // hour of day
+                0,  // minute
+                0   // second
+        );
+
+        return dtFormatter.format(todayAtMidnightUtc.toInstant());
     }
 
     private static String submitExportJob(String accessToken, String hostUrl,
