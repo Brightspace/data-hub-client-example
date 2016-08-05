@@ -22,7 +22,6 @@ import static java.lang.System.exit;
 import static java.lang.System.getProperty;
 import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
-import static javax.json.Json.createReader;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.client.fluent.Request.Get;
@@ -32,6 +31,8 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -41,14 +42,16 @@ import java.nio.file.Paths;
 import java.util.Calendar;
 import java.util.List;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.entity.InputStreamFactory;
 import org.apache.http.client.fluent.Form;
-
-import javax.json.JsonObject;
 
 public class Main {
 
@@ -60,6 +63,8 @@ public class Main {
     private static String[] dates = { "2016-05-29T08:00:23.4560000Z",
             "2016-05-29T09:00:23.4560000Z", "2016-05-30T09:01:00.0000000Z",
             "2016-05-31T09:00:00.0000000Z", "2016-05-31T09:02:45.6780000Z" };
+
+    private static final JsonParser jsonParser = new JsonParser();
 
     public static void main(String[] args)
             throws URISyntaxException, IOException, InterruptedException {
@@ -109,18 +114,17 @@ public class Main {
                 e -> "Could not get access token"
         );
 
-        JsonObject responseJson = createReader(
-                response
-                        .getEntity()
-                        .getContent()
-        )
-        .readObject();
+        JsonObject responseJson = httpResponseToJsonObject(response);
 
-        String accessToken = responseJson.getString("access_token");
+        String accessToken = responseJson
+                .get("access_token")
+                .getAsString();
 
         // Refresh token are one-time use
         // The token endpoint provides a new refresh token that we should store for future requests
-        String newRefreshToken = responseJson.getString("refresh_token");
+        String newRefreshToken = responseJson
+                .get("refresh_token")
+                .getAsString();
         Files.write(refreshTokenPath, newRefreshToken.getBytes());
 
         /* Kick off a Data Hub export */
@@ -198,6 +202,18 @@ public class Main {
         return response;
     }
 
+    private static JsonObject httpResponseToJsonObject(HttpResponse response) throws IOException {
+        InputStream responseContent = response
+                .getEntity()
+                .getContent();
+
+        InputStreamReader responseContentReader = new InputStreamReader(responseContent);
+
+        return jsonParser
+                .parse(responseContentReader)
+                .getAsJsonObject();
+    }
+
     /* OAuth 2.0 helper methods */
     private static String getClientAuthHeaderValue(
             String clientId,
@@ -246,12 +262,19 @@ public class Main {
                 "{\"DataSetId\": \"%s\", \"Filters\": [{\"Name\": \"startDate\", \"Value\": \"%s\"}, {\"Name\": \"endDate\", \"Value\": \"%s\"}]}",
                 dataSetId, startDate, endDate);
 
-        String exportJobId = createReader(makePostRequest(accessToken,
-                format("%s/d2l/api/lp/1.13/dataExport/create", hostUrl), bodyString,
+        HttpResponse response = makePostRequest(
+                accessToken,
+                format("%s/d2l/api/lp/1.13/dataExport/create", hostUrl),
+                bodyString,
                 e -> format(
                         "cannot create job [requestBody = %s, statusCode = %d]",
-                        hostUrl, bodyString, e)).getEntity().getContent()).readObject()
-                                .getString("ExportJobId");
+                        hostUrl, bodyString, e
+                )
+        );
+
+        String exportJobId = httpResponseToJsonObject(response)
+                .get("ExportJobId")
+                .getAsString();
 
         System.err.println(
                 format("Created the export job [dataSetId = %s, startDate = %s, endDate = %s, exportJobId = %s].",
@@ -286,13 +309,18 @@ public class Main {
                 format("Checking the export-job status [exportJobId = %s]...",
                         exportJobId));
 
-        int status = createReader(makeGetRequest(accessToken,
-                format("%s/d2l/api/lp/1.13/dataExport/jobs/%s",
-                        hostUrl, exportJobId),
+        HttpResponse response = makeGetRequest(
+                accessToken,
+                format("%s/d2l/api/lp/1.13/dataExport/jobs/%s", hostUrl, exportJobId),
                 e -> format(
                         "cannot check the export-job status [exportJobId = %s, statusCode = %d]",
-                        exportJobId, e)).getEntity().getContent()).readObject()
-                                .getInt("Status");
+                        exportJobId, e
+                )
+        );
+
+        int status = httpResponseToJsonObject(response)
+                .get("Status")
+                .getAsInt();
 
         assertValidStatus(exportJobId, status);
 
