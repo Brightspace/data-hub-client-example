@@ -66,14 +66,14 @@ public class Main {
 
     private static final JsonParser jsonParser = new JsonParser();
 
+    // Represents the Enrollments and Withdrawals data set
+    private static final String dataSetId = "c1bf7603-669f-4bef-8cf4-651b914c4678";
+
     public static void main(String[] args)
             throws URISyntaxException, IOException, InterruptedException {
 
         /* Data Hub related properties */
         String hostUrl = getProperty("hostUrl");
-        String dataSetId = getProperty(
-                "dataSetId",
-                "c1bf7603-669f-4bef-8cf4-651b914c4678");
         String outputFolder = getProperty("outputFolder");
 
         /* OAuth 2.0 related properties */
@@ -89,7 +89,7 @@ public class Main {
         String refreshTokenFile = getProperty("refreshTokenFile");
 
         /* Pre-condition checks */
-        assertAllArgumentsSpecified(hostUrl, dataSetId, clientId,
+        assertAllArgumentsSpecified(hostUrl, clientId,
                 clientSecret, outputFolder, refreshTokenFile);
 
         /* Retrieve a valid refresh token and use it to obtain a new access token */
@@ -156,7 +156,7 @@ public class Main {
 
     private static void printUsage(PrintStream printStream) {
         printStream.println("usage: java -jar <jarfile> ");
-        printStream.println("\t-DhostUrl=<hostUrl> -DdataSetId=<reportId>");
+        printStream.println("\t-DhostUrl=<hostUrl>");
         printStream.println("\t-DclientId=<clientId> -DclientSecret=<clientSecret>");
         printStream.println("\t-DefreshTokenFile=<refreshTokenFile>");
         printStream.println("\t-DoutputFolder=<outputFolder>");
