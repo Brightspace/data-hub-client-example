@@ -43,7 +43,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.List;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.codec.binary.Base64;
@@ -51,15 +50,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.InputStreamFactory;
 import org.apache.http.client.fluent.Form;
 
 public class Main {
-
-    @FunctionalInterface
-    private static interface ErrorMessageFactory {
-        String getErrorMessage(int errorCode);
-    }
 
     private static final DateTimeFormatter dtFormatter = DateTimeFormatter.ISO_INSTANT;
     private static final Calendar now = Calendar.getInstance();
@@ -111,7 +104,7 @@ public class Main {
 
         assertOkResponse(
                 response,
-                e -> "Could not get access token"
+                "Could not get access token"
         );
 
         JsonObject responseJson = httpResponseToJsonObject(response);
@@ -164,16 +157,23 @@ public class Main {
 
     /* HTTP helper methods */
     private static void assertOkResponse(HttpResponse response,
-                                         ErrorMessageFactory errorMessageFactory) {
+                                         String errorMessage) throws IOException {
         int statusCode = response.getStatusLine().getStatusCode();
 
         if (statusCode != SC_OK) {
-            die(errorMessageFactory.getErrorMessage(statusCode));
+            String error = format(
+                    "[Error Message = %s, HTTP Response Status code = %d, HTTP Response Content = %s]",
+                    errorMessage,
+                    statusCode,
+                    IOUtils.toString(response.getEntity().getContent())
+            );
+
+            die(error);
         }
     }
 
     private static HttpResponse makeGetRequest(String accessToken,
-                                               String uri, ErrorMessageFactory errorMessageFactory)
+                                               String uri, String errorMessage)
             throws IOException {
 
         HttpResponse response = Get(uri)
@@ -181,14 +181,14 @@ public class Main {
                 .execute()
                 .returnResponse();
 
-        assertOkResponse(response, errorMessageFactory);
+        assertOkResponse(response, errorMessage);
 
         return response;
     }
 
     private static HttpResponse makePostRequest(String accessToken,
                                                 String uri, String bodyString,
-                                                ErrorMessageFactory errorMessageFactory)
+                                                String errorMessage)
             throws IOException {
 
         HttpResponse response = Post(uri)
@@ -196,7 +196,7 @@ public class Main {
                 .bodyString(bodyString, APPLICATION_JSON).execute()
                 .returnResponse();
 
-        assertOkResponse(response, errorMessageFactory);
+        assertOkResponse(response, errorMessage);
 
         return response;
     }
@@ -233,9 +233,7 @@ public class Main {
 
         makeGetRequest(accessToken,
                 format("%s/d2l/api/lp/1.13/dataExport/list/%s", hostUrl, dataSetId),
-                e -> format(
-                        "cannot find the specified data set [dataSetId = %s, statusCode = %d]",
-                        hostUrl, dataSetId, e));
+                format("cannot find the specified data set [dataSetId = %s]", dataSetId));
 
         System.err.println(
                 format("Verified that the data set is available for export-job creation [dataSetId = %s].",
@@ -285,10 +283,7 @@ public class Main {
                 accessToken,
                 format("%s/d2l/api/lp/1.13/dataExport/create", hostUrl),
                 bodyString,
-                e -> format(
-                        "cannot create job [requestBody = %s, statusCode = %d]",
-                        hostUrl, bodyString, e
-                )
+                format("cannot create job [requestBody = %s]", bodyString)
         );
 
         String exportJobId = httpResponseToJsonObject(response)
@@ -331,10 +326,7 @@ public class Main {
         HttpResponse response = makeGetRequest(
                 accessToken,
                 format("%s/d2l/api/lp/1.13/dataExport/jobs/%s", hostUrl, exportJobId),
-                e -> format(
-                        "cannot check the export-job status [exportJobId = %s, statusCode = %d]",
-                        exportJobId, e
-                )
+                format("cannot check the export-job status [exportJobId = %s]", exportJobId)
         );
 
         int status = httpResponseToJsonObject(response)
@@ -377,9 +369,8 @@ public class Main {
             makeGetRequest(accessToken,
                     format("%s/d2l/api/lp/1.13/dataExport/download/%s",
                             hostUrl, exportJobId),
-                    e -> format(
-                            "cannot download the export job [exportJobId = %s, statusCode = %d]",
-                            exportJobId, e)).getEntity()
+                    format("cannot download the export job [exportJobId = %s]",
+                            exportJobId)).getEntity()
                                     .writeTo(fileOutputStream);
         }
 
