@@ -40,5 +40,5 @@ This application requires the following system properties to be set:
 
 ### Example
 
-	java -DhostUrl=http://myschool.brightspace.com/ -DdataSetId=c1bf7603-669f-4bef-8cf4-651b914c4678 -DclientId=theClientId -DclientSecret=theClientSecret -DoutputFolder=/output -DrefreshTokenFile=refreshToken.txt -jar data-hub-client-example-1.0-SNAPSHOT.jar
+	java -DhostUrl=http://myschool.brightspace.com/ -DclientId=theClientId -DclientSecret=theClientSecret -DoutputFolder=/output -DrefreshTokenFile=refreshToken.txt -jar data-hub-client-example-1.0-SNAPSHOT.jar
 
