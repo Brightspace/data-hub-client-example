@@ -2,6 +2,8 @@
 
 This is a demonstration of how to retrieve data from Brightspace via the Data Hub APIs.
 
+This example retrieves data for the *Enrollments and Withdrawals* data set. The [Brightspace API reference](http://docs.valence.desire2learn.com/reference.html) will document the Data Export route you can use to discover the set of supported data sets. Additionally, we will be publishing an article on the [Brightspace Developer Community blog](https://community.brightspace.com/devcop/blog) to provide a more in-depth walkthrough about this new feature.
+
 Note: this client assumes a valid OAuth 2.0 refresh token has already been obtained, and does not initiate the [OAuth 2.0 authorization flow](https://tools.ietf.org/html/rfc6749#section-4).
 
 ## Building
@@ -16,12 +18,6 @@ This application requires the following system properties to be set:
 
 * The URL to your Brightspace instance
 * e.g. `https://myschool.brightspace.com`
-
-**dataSetId**
-
-* A GUID that represents the data set of interest
-* e.g. `c1bf7603-669f-4bef-8cf4-651b914c4678` represents the *Enrollments and Withdrawals* data set
-* The [Brightspace API reference](http://docs.valence.desire2learn.com/reference.html) will document the Data Export route you can use to discover the set of supported ID values. Additionally, we will be publishing an article on the [Brightspace Developer Community blog](https://community.brightspace.com/devcop/blog) to provide a more in-depth walkthrough about this new feature
 
 **clientId**
 
