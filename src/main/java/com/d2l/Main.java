@@ -148,11 +148,11 @@ public class Main {
     }
 
     private static void printUsage(PrintStream printStream) {
-        printStream.println("usage: java -jar <jarfile> ");
-        printStream.println("\t-DhostUrl=<hostUrl>");
+        printStream.println("usage: java -DhostUrl=<hostUrl>");
         printStream.println("\t-DclientId=<clientId> -DclientSecret=<clientSecret>");
         printStream.println("\t-DefreshTokenFile=<refreshTokenFile>");
         printStream.println("\t-DoutputFolder=<outputFolder>");
+        printStream.println("\t-jar <jarfile> ");
     }
 
     /* HTTP helper methods */
