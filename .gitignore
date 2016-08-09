@@ -4,6 +4,4 @@
 target/
 .idea/
 *.iml
-vagrant*
-.vagrant/
 d2016*/
