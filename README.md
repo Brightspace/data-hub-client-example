@@ -2,9 +2,9 @@
 
 This is a demonstration of how to retrieve data from Brightspace via the Data Hub APIs.
 
-This example retrieves data for the *Enrollments and Withdrawals* data set. The [Brightspace API reference](http://docs.valence.desire2learn.com/reference.html) will document the Data Export route you can use to discover the set of supported data sets. Additionally, we will be publishing an article on the [Brightspace Developer Community blog](https://community.brightspace.com/devcop/blog) to provide a more in-depth walkthrough about this new feature.
+This example retrieves data for the *Enrollments and Withdrawals* data set. The [Brightspace API reference](http://docs.valence.desire2learn.com/reference.html) will document the Data Export route you can use to discover the set of supported data sets. Additionally, we have published an article on the [Brightspace Developer Community blog](https://community.brightspace.com/devcop/blog/how_to_get_started_with_data_hub_api) to provide a more in-depth walkthrough about this new feature.
 
-Note: this client assumes a valid OAuth 2.0 refresh token has already been obtained, and does not initiate the [OAuth 2.0 authorization flow](https://tools.ietf.org/html/rfc6749#section-4). An article on the [Brightspace Developer Community blog](https://community.brightspace.com/devcop/blog) will be available to provide steps on how to obtain a refresh token.
+Note: this client assumes a valid OAuth 2.0 refresh token has already been obtained, and does not initiate the [OAuth 2.0 authorization flow](https://tools.ietf.org/html/rfc6749#section-4). An article on the [Brightspace Developer Community blog](https://community.brightspace.com/devcop/blog/how_to_obtain_an_oauth_20_refresh_token) is available to provide steps on how to obtain a refresh token.
 
 ## Building
 
